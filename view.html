@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Invoice</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"] {
+            padding: 8px;
+            margin: 5px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>View Invoice Details</h1>
+        <form id="invoice-form">
+            <label for="invoice-number">Enter Invoice Number:</label>
+            <input type="text" id="invoice-number" name="invoice-number">
+            <button type="submit">View Details</button>
+        </form>
+        <div id="invoice-details"></div>
+    </div>
+
+    <script>
+        
+    // Initialize Firebase
+    var firebaseConfig = {
+        apiKey: "AIzaSyDklv5Sgwiy84_fCOqiQRCiuTBVRZ_2EvY",
+        authDomain: "my-1-wb.firebaseapp.com",
+        projectId: "my-1-wb",
+        storageBucket: "my-1-wb.appspot.com",
+        messagingSenderId: "865633557898",
+        appId: "1:865633557898:web:5e8a848b08d7475054bc73"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+        document.getElementById('invoice-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var invoiceNumber = document.getElementById('invoice-number').value;
+            fetchInvoiceDetails(invoiceNumber);
+        });
+
+        function fetchInvoiceDetails(invoiceNumber) {
+            // Fetch invoice details from Firestore based on the entered invoice number
+            firebase.firestore().collection("invoices").where("invoiceNumber", "==", invoiceNumber).get()
+            .then(function(querySnapshot) {
+                querySnapshot.forEach(function(doc) {
+                    // Render invoice details
+                    renderInvoiceDetails(doc.data());
+                });
+            })
+            .catch(function(error) {
+                console.error("Error fetching invoice details:", error);
+            });
+        }
+
+        function renderInvoiceDetails(invoiceData) {
+            // Generate HTML table to display invoice details
+            var detailsHTML = `
+                <h2>Invoice Details</h2>
+                <table>
+                    <tr>
+                        <th>Field</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Invoice Number</td>
+                        <td>${invoiceData.invoiceNumber}</td>
+                    </tr>
+                    <tr>
+                        <td>Truck Number</td>
+                        <td>${invoiceData.truckNo}</td>
+                    </tr>
+                    <tr>
+                        <td>Description</td>
+                        <td>${invoiceData.description}</td>
+                    </tr>
+                    <tr>
+                        <td>Amount</td>
+                        <td>${invoiceData.amount}</td>
+                    </tr>
+                    <tr>
+                        <td>Loading Company</td>
+                        <td>${invoiceData.loadingCompany}</td>
+                    </tr>
+                    <tr>
+                        <td>Depot</td>
+                        <td>${invoiceData.depot}</td>
+                    </tr>
+                </table>
+            `;
+            document.getElementById('invoice-details').innerHTML = detailsHTML;
+        }
+    </script>
+</body>
+</html>

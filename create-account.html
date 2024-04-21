@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- ... same head content as before ... -->
+    <title>Create Account</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+</head>
+<style>
+    body {
+        background-image: url('oil.jpg');
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        position: auto;
+    }
+
+    .card {
+        background-color: rgba(255, 255, 255, 0.7); /* 0.7 is the alpha value, adjust it to your liking */
+        color: #333;
+        border-radius: 10px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        padding: 20px;
+        position: relative;
+        margin: auto;
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .card-header img {
+        width: 50px;
+        margin-right: 10px;
+    }
+
+    .card-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        color: #666;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+        border-color: #666;
+    }
+    
+
+    .morphic-button.green {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .morphic-button.green:hover {
+        background-color: #45a049;
+    }
+
+    .error-message {
+        color: #ff0000;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    a {
+        color: #1e88e5;
+        text-decoration: none;
+        margin-right: 10px;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    .separator {
+        color: #666;
+    }
+</style>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <img src="logo.jpg" class="logo" alt="Company Logo">
+                <h1>Create an account for OILWELL CO LTD</h1>
+            </div>
+            <div class="card-body">
+                <form id="create-account-form">
+
+                    <label for="workId">Work ID:</label>
+                    <input type="text" id="work-id" name="work-id" required>
+
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+
+                    <label for="confirm-password">Confirm Password:</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+
+                    <button type="submit" class="morphic-button green animate-button">Create Account</button>
+                </form>
+                <div id="creating-account-message" class="creating-account-message"></div>
+                <div id="error-message" class="error-message"></div>
+                <a href="login.html">Already have an account? Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Get a reference to the database service
+var database = firebase.database();
+
+// Get references to the input fields and error message elements
+const workIdInput = document.getElementById("work-id");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const confirmPasswordInput = document.getElementById("confirm-password");
+const errorMessage = document.getElementById("error-message");
+
+// Function to validate the Work ID
+function validateWorkId(workId) {
+    // Check if the Work ID starts with "IA00"
+    if (!workId.startsWith("IA00")) {
+        return false;
+    }
+
+    // Extract the numeric part of the Work ID
+    const numericPart = parseInt(workId.substring(4));
+
+    // Check if the numeric part is less than 10
+    return numericPart < 10;
+}
+
+// Function to validate the password
+function validatePassword(password) {
+    // Password rules: at least 8 characters, at least one uppercase letter, one lowercase letter, one number, and one special character
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
+}
+
+// Add an event listener for the input event on the Work ID input field
+workIdInput.addEventListener("input", () => {
+    const workId = workIdInput.value;
+    if (!validateWorkId(workId)) {
+        errorMessage.textContent = "Invalid Work ID";
+        errorMessage.style.color = "red";
+    } else {
+        // Check if the work ID already exists in the database
+        firebase.database().ref('users').orderByChild('workId').equalTo(workId).once('value')
+            .then(snapshot => {
+                if (snapshot.exists()) {
+                    errorMessage.textContent = "Work ID already exists";
+                    errorMessage.style.color = "red";
+                } else {
+                    errorMessage.textContent = "";
+                }
+            });
+    }
+});
+
+// Add an event listener for the input event on the email input field
+emailInput.addEventListener("input", () => {
+    const email = emailInput.value;
+    // Check if the email already exists in the database
+    firebase.database().ref('users').orderByChild('email').equalTo(email).once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                errorMessage.textContent = "Email already exists";
+                errorMessage.style.color = "red";
+            } else {
+                errorMessage.textContent = "";
+            }
+        });
+});
+
+// Add an event listener for the input event on the password input field
+passwordInput.addEventListener("input", () => {
+    const password = passwordInput.value;
+    if (!validatePassword(password)) {
+        errorMessage.textContent = "Invalid password";
+        errorMessage.style.color = "red";
+    } else {
+        errorMessage.textContent = "";
+    }
+});
+
+// Add an event listener for the input event on the confirm password input field
+confirmPasswordInput.addEventListener("input", () => {
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+    if (password !== confirmPassword) {
+        errorMessage.textContent = "Passwords do not match";
+        errorMessage.style.color = "red";
+    } else {
+        errorMessage.textContent = "";
+    }
+});
+
+// Add an event listener for the submit event on the form
+document.getElementById("create-account-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const workId = workIdInput.value;
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    // Validate the Work ID
+    if (!validateWorkId(workId)) {
+        errorMessage.textContent = "Invalid Work ID";
+        errorMessage.style.color = "red";
+        return;
+    }
+
+    // Validate the password
+    if (!validatePassword(password)) {
+        errorMessage.textContent = "Invalid password";
+        errorMessage.style.color = "red";
+        return;
+    }
+
+    // Check if the passwords match
+    if (password !== confirmPassword) {
+        errorMessage.textContent = "Passwords do not match";
+        errorMessage.style.color = "red";
+        return;
+    }
+
+    // Create a new user with the specified email and password
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            // Add the user details to the database
+            const user = {
+                workId: workId,
+                email: email,
+                password: password
+            };
+            firebase.database().ref('users').push(user);
+
+            // Display a success message
+            errorMessage.textContent = "Account created successfully";
+            errorMessage.style.color = "green";
+        })
+        .catch((error) => {
+            // Display an error message
+            errorMessage.textContent = error.message;
+            errorMessage.style.color = "red";
+        });
+
+    // Clear the form fields
+    workIdInput.value = "";
+    emailInput.value = "";
+    passwordInput.value = "";
+    confirmPasswordInput.value = "";
+
+    // Clear the error message after 5 seconds
+    setTimeout(() => {
+        errorMessage.textContent = "";
+    }, 5000);
+
+    // Clear the success message after 5 seconds
+    setTimeout(() => {
+        errorMessage.textContent = "";
+    }, 5000);
+
+    //navigate to login page on successful account creation
+    setTimeout(() => {
+        window.location.href = "index.html";
+    }, 5000);
+
+});
+
+  
+  
+  </script>
+</body>
+</html>
+  

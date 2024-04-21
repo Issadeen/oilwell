@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Entry Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            width: 100%;
+            top: 0;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: #f5f5f5;
+            box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+        }
+        
+        header img {
+            margin-right: 20px;
+        }
+        
+        .logo {
+            width: 100px; /* Adjust this to change the size of the image */
+            margin-right: 10px; /* Add some space between the image and the text */
+            float: left; /* Position the image to the left of the text */
+        }
+        
+        h1 {
+            position: absolute; /* Position the logo absolutely */
+            left: 50%; /* Position the logo  */
+            color: #333;
+            margin-bottom: 20px;
+            padding: 10px; /* Add some padding */
+            display: inline-block; /* Needed to fit the border to the text */
+        }
+        form {
+            max-width: 1200px; /* Increase the max-width for larger screens */
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 40px; /* Increase padding for more space inside the form */
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: grid; /* Use CSS Grid */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Create responsive columns */
+            grid-gap: 40px; /* Increase gap between the columns */
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+    input[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        background-color: #4CAF50;
+        color: #fff;
+        cursor: pointer;
+        grid-column: span 2; /* Make the button span across two columns */
+    }
+
+    @media (max-width: 1200px) { /* Apply these styles when the screen size is 1200px or less */
+        input[type="submit"] {
+            grid-column: auto; /* Reset the button to take up only one column */
+        }
+    }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+button#backButton {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #f0f0f0; /* Change this to your preferred color */
+    color: #333; /* Change this to your preferred color */
+    cursor: pointer;
+    grid-column: span 2; /* Make the button span across two columns */
+}
+
+@media (max-width: 1200px) { /* Apply these styles when the screen size is 1200px or less */
+    button#backButton {
+        grid-column: auto; /* Reset the button to take up only one column */
+    }
+}
+
+button#backButton:hover {
+    background-color: #ddd; /* Change this to your preferred color */
+}
+
+#truckWarning {
+    color: red;
+    display: none;
+}
+
+
+
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+</head>
+<body>
+    <header>
+        <img src="logo.jpg" class="logo" alt="Company Logo">
+        <h1>Truck Data Entry</h1>
+    </header>
+
+    <form id="truck-form">
+        <div>
+            <label for="truck">Truck:</label>
+            <input type="text" id="truck" name="truck">
+            <p id="truckWarning" style="color: red; display: none;">Truck number already exists!</p>
+            <label for="driver">Driver:</label>
+            <input type="text" id="driver" name="driver">
+            <label for="driverId">Driver ID:</label>
+            <input type="text" id="driverId" name="driverId">
+            <label for="tel">Telephone:</label>
+            <input type="text" id="tel" name="tel" pattern="\d*" title="Please enter a 10-digit phone number (e.g., 0702133455)">
+
+        </div>
+        <div>
+            <label for="product">Product:</label>
+            <input type="text" id="product" name="product" pattern="[A-Za-z\s]*">
+            <label for="vobs">V(OBS):</label>
+            <input type="text" id="vobs" name="vobs" pattern="\d*">
+            <label for="comp">Comp:</label>
+            <input type="text" id="comp" name="comp">
+        </div>
+        <input type="submit" value="Submit">
+        <button type="button" id="backButton">Back</button>
+
+    </form>
+
+    <script>
+
+          document.getElementById('backButton').addEventListener('click', function() {
+        window.location.href = 'dashboard.html';
+    });
+        // TODO: Replace the following with your app's Firebase project configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyDklv5Sgwiy84_fCOqiQRCiuTBVRZ_2EvY",
+             authDomain: "my-1-wb.firebaseapp.com",
+        projectId: "my-1-wb",
+        storageBucket: "my-1-wb.appspot.com",
+        messagingSenderId: "865633557898",
+        appId: "1:865633557898:web:5e8a848b08d7475054bc73"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Get form elements
+    var truckForm = document.getElementById('truck-form');
+    var truckInput = document.getElementById('truck');
+    var driverInput = document.getElementById('driver');
+    var driverIdInput = document.getElementById('driverId');
+    var telInput = document.getElementById('tel');
+    var productInput = document.getElementById('product');
+    var vobsInput = document.getElementById('vobs');
+    var compInput = document.getElementById('comp');
+
+    // define inputs
+    var inputs = [truckInput, driverInput, driverIdInput, telInput, productInput, vobsInput, compInput];
+
+    // Add event listener for input change
+    truckInput.addEventListener('input', function() {
+        // Query Firestore to check if truck number already exists
+        firebase.firestore().collection('jwtrucks').where('truck', '==', truckInput.value).get().then(function(querySnapshot) {
+            if (!querySnapshot.empty) {
+                // Truck number already exists, show warning
+                truckInput.setCustomValidity('Truck number already exists!');
+            } else {
+                // Truck number does not exist, clear warning
+                truckInput.setCustomValidity('');
+            }
+        });
+    });
+
+    // Get warning element
+    var truckWarning = document.getElementById('truckWarning');
+
+    // Add real-time event listener for input change
+    truckInput.addEventListener('input', function() {
+        // Query Firestore to check if truck number already exists
+        firebase.firestore().collection('jwtrucks').where('truck', '==', truckInput.value).get().then(function(querySnapshot) {
+            if (!querySnapshot.empty) {
+                // Truck number already exists, show warning
+                truckWarning.style.display = 'block';
+            } else {
+                // Truck number does not exist, hide warning
+                truckWarning.style.display = 'none';
+            }
+        });
+    });
+    truckForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        inputs.forEach(function(input) {
+    input.addEventListener('input', function() {
+        // Clear custom validity message when input value changes
+        input.setCustomValidity('');
+    });
+});
+
+// Validate inputs
+var isValid = inputs.every(function(input) {
+    if (input.value.trim() === '' || input.validity.patternMismatch) {
+        // Input is empty or does not match pattern, show warning
+        input.setCustomValidity('This field is required!');
+        input.style.borderColor = 'red';
+        return false;
+    } else {
+        // Input is not empty and matches pattern, clear warning
+        input.style.borderColor = 'green';
+        return true;
+    }
+});
+
+        if (!isValid) {
+            // Not all inputs are valid, stop submission
+            return;
+        }
+
+        // Write to Firestore
+        firebase.firestore().collection('jwtrucks').add({
+            truck: truckInput.value,
+            driver: driverInput.value,
+            driverId: driverIdInput.value, // Add this line
+            tel: telInput.value,
+            product: productInput.value,
+            vobs: vobsInput.value,
+            comp: compInput.value,
+            loaded: false,
+            invoiced: false
+        }).then(function(docRef) {
+            console.log("Document written with ID: ", docRef.id);
+            alert("Data successfully submitted!");
+            truckForm.reset();
+        }).catch(function(error) {
+            console.error("Error adding document: ", error);
+            alert("An error occurred. Please try again.");
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Display Page</title>
+    <link rel="icon" href="logo.jpg" type="image/jpg">
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin: 0 auto 20px auto; /* top and bottom margins are 0, left and right margins are auto */
+            text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px dotted #ccc;
+            transition: background-color 0.3s ease;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+            text-transform: uppercase;
+        }
+        td {
+            color: #555;
+        }
+        tr:hover td {
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: #fff;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: #f5f5f5;
+            box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+        }
+        
+        header img {
+            margin-right: 20px;
+        }
+        
+        #truck-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        #truck-table th, #truck-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        #truck-table tr:hover {background-color: #f5f5f5;}
+
+        #truck-table th {
+            background-color: #f2f2f2;
+        }
+
+        #truck-table th, #truck-table td {
+            width: 10%;
+        }
+
+        #truck-table td {
+            width: 10%;
+        }
+
+        #truck-table td.index {
+            width: 5%;
+        }
+
+        #truck-table td.actions {
+            width: 20%;
+        }
+
+        .search-container {
+            margin: 20px 0;
+        }
+
+        .search-container input[type=text] {
+            width: 98%;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 17px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+        }
+
+        @media screen and (max-width: 600px) {
+            .search-container {
+                float: none;
+            }
+            .search-container input[type=text] {
+                width: 100%;
+                margin-bottom: 12px;
+            }
+        }
+
+        .logo {
+            width: 100px;
+            margin-bottom: 0px;
+        }
+
+    </style>
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+</head>
+<body>
+    <header>
+        <img src="logo.jpg" class="logo" alt="Company Logo">
+        <h1>Truck Data</h1>
+
+        <button id="load-button">Load Selected Trucks</button>
+        <p id="tally-counter">Trucks selected: 0</p> <!-- Tally counter -->
+    </header>
+
+    <div style="overflow-x:auto;">
+        <div class="search-container">
+            <input type="text" id="searchInput" onkeyup="searchTruck()" placeholder="Search for truck number...">
+        </div>
+        <table id="truck-table">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>#</th>
+                    <th>Truck</th>
+                    <th>Driver</th>
+                    <th>Driver ID</th>
+                    <th>Telephone</th>
+                    <th>Product</th>
+                    <th>V(OBS)</th>
+                    <th>Comp</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        <tbody>
+                <!-- Rows will be added here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Initialize Firebase with your project configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyDklv5Sgwiy84_fCOqiQRCiuTBVRZ_2EvY",
+             authDomain: "my-1-wb.firebaseapp.com",
+        projectId: "my-1-wb",
+        storageBucket: "my-1-wb.appspot.com",
+        messagingSenderId: "865633557898",
+        appId: "1:865633557898:web:5e8a848b08d7475054bc73"
+        };
+        firebase.initializeApp(firebaseConfig);
+    
+// Get table body element
+var truckTableBody = document.querySelector('#truck-table tbody');
+
+// Function to search for trucks
+function searchTruck() {
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("searchInput");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("truck-table");
+    tr = table.getElementsByTagName("tr");
+
+    // Loop through all table rows, and hide those who don't match the search query
+    for (i = 0; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName("td")[2]; // Get the third column (truck)
+        if (td) {
+            txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+
+    
+        // Function to create and append rows for each truck document
+        function appendTruckRows(querySnapshot) {
+            var index = 1; // Counter variable
+            querySnapshot.forEach(function(doc) {
+                var truckData = doc.data();
+                var row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td class="index">${index}</td>
+                    <td class="truck" contenteditable="false">${truckData.truck}</td>
+                    <td class="driver" contenteditable="false">${truckData.driver}</td>
+                    <td class="driverId" contenteditable="false">${truckData.driverId}</td>
+                    <td class="tel" contenteditable="false">${truckData.tel}</td>
+                    <td class="product" contenteditable="false">${truckData.product}</td>
+                    <td class="vobs" contenteditable="false">${truckData.vobs}</td>
+                    <td class="comp" contenteditable="false">${truckData.comp}</td>
+                    <td>
+                        <button class="edit-button" data-id="${doc.id}"><i class="fas fa-edit"></i></button>
+                        <button class="save-button" data-id="${doc.id}" style="display:none;"><i class="fas fa-save"></i></button>
+                        <button class="delete-button" data-id="${doc.id}" style="background-color: red;"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                `;
+                index++; // Increment counter
+    
+                // Attach event listener for editing row
+                var editButton = row.querySelector('.edit-button');
+                editButton.addEventListener('click', function() {
+                    // Ask for confirmation before editing
+                    if (confirm('Are you sure you want to edit this row?')) {
+                        var row = this.parentNode.parentNode;
+                        var cells = row.querySelectorAll('.truck, .driver, .driverId, .tel, .product, .vobs, .comp');
+                        cells.forEach(function(cell) {
+                            cell.setAttribute('contenteditable', 'true');
+                            cell.style.backgroundColor = '#ffffcc';
+                        });
+                        var editButton = row.querySelector('.edit-button');
+                        var saveButton = row.querySelector('.save-button');
+                        editButton.style.display = 'none';
+                        saveButton.style.display = '';
+                    } else {
+                        // If the user cancels, do nothing
+                        return;
+                    }
+                });
+    
+                // Attach event listener for saving edited data
+                var saveButton = row.querySelector('.save-button');
+                saveButton.addEventListener('click', function() {
+                    var id = this.getAttribute('data-id');
+                    var row = this.parentNode.parentNode;
+                    var updatedData = {
+                        truck: row.querySelector('.truck').textContent,
+                        driver: row.querySelector('.driver').textContent,
+                        driverId: row.querySelector('.driverId').textContent,
+                        tel: row.querySelector('.tel').textContent,
+                        product: row.querySelector('.product').textContent,
+                        vobs: row.querySelector('.vobs').textContent,
+                        comp: row.querySelector('.comp').textContent
+                    };
+    
+                    if (confirm('Are you sure you want to save these changes?')) {
+                        firebase.firestore().collection('jwtrucks').doc(id).update(updatedData)
+                            .then(function() {
+                                alert("Data updated successfully!");
+                                var cells = row.querySelectorAll('.truck, .driver, .driverId, .tel, .product, .vobs, .comp');
+                                cells.forEach(function(cell) {
+                                    cell.setAttribute('contenteditable', 'false');
+                                    cell.style.backgroundColor = '';
+                                });
+                                var editButton = row.querySelector('.edit-button');
+                                var saveButton = row.querySelector('.save-button');
+                                editButton.style.display = '';
+                                saveButton.style.display = 'none';
+                            })
+                            .catch(function(error) {
+                                console.error("Error updating document: ", error);
+                                alert("An error occurred. Please try again.");
+                            });
+                    }
+                });
+    
+                // Attach event listener for deleting data
+                var deleteButton = row.querySelector('.delete-button');
+                deleteButton.addEventListener('click', function() {
+                    var id = this.getAttribute('data-id');
+                    if (confirm('Are you sure you want to delete this data?')) {
+                        firebase.firestore().collection('jwtrucks').doc(id).delete()
+                            .then(function() {
+                                row.remove();
+                            })
+                            .catch(function(error) {
+                                console.error("Error removing document: ", error);
+                                alert("An error occurred. Please try again.");
+                            });
+                    }
+                });
+    
+                // Append the row to the table body
+                truckTableBody.appendChild(row);
+    
+                // Attach event listener for checkbox change
+                row.querySelector('.select-checkbox').addEventListener('change', updateTallyCounter);
+            });
+        }
+    
+        // Function to update the tally counter
+        function updateTallyCounter() {
+            // Get all checkboxes
+            var checkboxes = document.querySelectorAll('.select-checkbox');
+            var selectedCount = 0;
+    
+            // Loop through checkboxes to count selected ones
+            checkboxes.forEach(function(checkbox) {
+                if (checkbox.checked && !checkbox.disabled) {
+                    selectedCount++;
+                }
+            });
+    
+            // Update the tally counter text
+            document.getElementById("tally-counter").textContent = "Trucks selected: " + selectedCount;
+        }
+    
+        // Get the load button element
+        var loadButton = document.querySelector('#load-button');
+    
+        // Event listener for load button click
+        loadButton.addEventListener('click', function() {
+            var checkboxes = document.querySelectorAll('.select-checkbox');
+            var selectedTrucks = [];
+    
+            checkboxes.forEach(function(checkbox, index) {
+                if (checkbox.checked && !checkbox.disabled) {
+                    var row = checkbox.parentNode.parentNode;
+                    var truckData = {
+                        index: row.querySelector('.index').textContent,
+                        truck: row.querySelector('.truck').textContent,
+                        driver: row.querySelector('.driver').textContent,
+                        driverId: row.querySelector('.driverId').textContent,
+                        tel: row.querySelector('.tel').textContent,
+                        product: row.querySelector('.product').textContent,
+                        vobs: row.querySelector('.vobs').textContent,
+                        comp: row.querySelector('.comp').textContent
+                    };
+                    selectedTrucks.push(truckData);
+                }
+            });
+    
+            // Save selected trucks to Firestore
+            var batch = firebase.firestore().batch();
+    
+            selectedTrucks.forEach(function(truckData) {
+                // Replace '/' with '_' in the truck number to make it a valid document ID
+                var docId = truckData.truck.replace('/', '_');
+                var ref = firebase.firestore().collection('selectedTrucks').doc(docId);
+                batch.set(ref, truckData);
+            });
+    
+            // Commit the batch operation
+            batch.commit()
+                .then(function() {
+                    console.log('Selected trucks saved to Firestore');
+                    // Refresh the page to update the disabled checkboxes
+                    location.reload();
+                })
+                .catch(function(error) {
+                    console.error("Error saving selected trucks: ", error);
+                    alert("An error occurred. Please try again.");
+                });
+        });
+    
+        // When the page loads, get the trucks from Firestore
+        firebase.firestore().collection('jwtrucks').where('loaded', '==', false).get()
+            .then(function(querySnapshot) {
+                // Append rows for each truck document
+                appendTruckRows(querySnapshot);
+    
+                // Update the tally counter initially
+                updateTallyCounter();
+            })
+            .catch(function(error) {
+                console.error("Error getting documents: ", error);
+                alert("An error occurred. Please try again.");
+            });
+    
+        // When the page loads, get the selected trucks from Firestore
+        firebase.firestore().collection('selectedTrucks').get()
+            .then(function(querySnapshot) {
+                var selectedTrucks = [];
+                querySnapshot.forEach(function(doc) {
+                    selectedTrucks.push(doc.data().truck);
+                });
+    
+                // Disable the checkboxes for the selected trucks
+                var checkboxes = document.querySelectorAll('.select-checkbox');
+                checkboxes.forEach(function(checkbox, index) {
+                    var row = checkbox.parentNode.parentNode;
+                    var truckNumber = row.querySelector('.truck').textContent;
+                    if (selectedTrucks.includes(truckNumber)) {
+                        checkbox.checked = true;
+                        checkbox.disabled = true;
+                    }
+                });
+            })
+            .catch(function(error) {
+                console.error("Error getting selected trucks: ", error);
+                alert("An error occurred. Please try again.");
+            });
+    </script>
+    
+</body>
+</html>
