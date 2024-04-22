@@ -208,28 +208,47 @@ function searchTruck() {
 
     
         // Function to create and append rows for each truck document
-        function appendTruckRows(querySnapshot) {
-            var index = 1; // Counter variable
-            querySnapshot.forEach(function(doc) {
-                var truckData = doc.data();
-                var row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><input type="checkbox" class="select-checkbox"></td>
-                    <td class="index">${index}</td>
-                    <td class="truck" contenteditable="false">${truckData.truck}</td>
-                    <td class="driver" contenteditable="false">${truckData.driver}</td>
-                    <td class="driverId" contenteditable="false">${truckData.driverId}</td>
-                    <td class="tel" contenteditable="false">${truckData.tel}</td>
-                    <td class="product" contenteditable="false">${truckData.product}</td>
-                    <td class="vobs" contenteditable="false">${truckData.vobs}</td>
-                    <td class="comp" contenteditable="false">${truckData.comp}</td>
-                    <td>
-                        <button class="edit-button" data-id="${doc.id}"><i class="fas fa-edit"></i></button>
-                        <button class="save-button" data-id="${doc.id}" style="display:none;"><i class="fas fa-save"></i></button>
-                        <button class="delete-button" data-id="${doc.id}" style="background-color: red;"><i class="fas fa-trash-alt"></i></button>
-                    </td>
-                `;
-                index++; // Increment counter
+function appendTruckRows(querySnapshot) {
+    var index = 1; // Counter variable
+
+    // Create an array from the querySnapshot
+    var docsArray = querySnapshot.docs;
+
+    // Sort the array by the 'truck' field
+    docsArray.sort(function(a, b) {
+        var truckA = a.data().truck.toUpperCase(); // Ignore case
+        var truckB = b.data().truck.toUpperCase(); // Ignore case
+        if (truckA < truckB) {
+            return -1;
+        }
+        if (truckA > truckB) {
+            return 1;
+        }
+        return 0; // Equal names
+    });
+
+    // Iterate over the sorted array
+    docsArray.forEach(function(doc) {
+        var truckData = doc.data();
+        var row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="select-checkbox"></td>
+            <td class="index">${index}</td>
+            <td class="truck" contenteditable="false">${truckData.truck}</td>
+            <td class="driver" contenteditable="false">${truckData.driver}</td>
+            <td class="driverId" contenteditable="false">${truckData.driverId}</td>
+            <td class="tel" contenteditable="false">${truckData.tel}</td>
+            <td class="product" contenteditable="false">${truckData.product}</td>
+            <td class="vobs" contenteditable="false">${truckData.vobs}</td>
+            <td class="comp" contenteditable="false">${truckData.comp}</td>
+            <td>
+                <button class="edit-button" data-id="${doc.id}"><i class="fas fa-edit"></i></button>
+                <button class="save-button" data-id="${doc.id}" style="display:none;"><i class="fas fa-save"></i></button>
+                <button class="delete-button" data-id="${doc.id}" style="background-color: red;"><i class="fas fa-trash-alt"></i></button>
+            </td>
+        `;
+        index++; // Increment counter
+
     
                 // Attach event listener for editing row
                 var editButton = row.querySelector('.edit-button');
