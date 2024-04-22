@@ -154,6 +154,10 @@
     #pdf-icon:hover {
         color: #c82333; /* Change the color of the icon when hovering over it */
     }
+
+    .queued {
+        background-color: #e0f7fa; /* A slight shade of blue */
+    }
         </style>
     </head>
     <body>
@@ -363,6 +367,17 @@
                     actionButton.style.display = queued ? 'block' : 'none';
                     // Set the text of the "Queue" button based on the queued status
                     queueButton.textContent = queued ? 'Unqueue' : 'Queue';
+
+                    // Find the checkbox for this row and disable it if the truck is queued
+                    var checkbox = row.querySelector('.deselect-checkbox');
+                    checkbox.disabled = queued;
+
+                    // Apply the 'queued' class to the row if the truck is queued
+                    if (queued) {
+                        row.classList.add('queued');
+                    } else {
+                        row.classList.remove('queued');
+                    }
                 });
                 // Append action cell to the row
                 row.appendChild(actionCell);
