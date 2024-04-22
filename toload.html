@@ -4,6 +4,7 @@
     <title>Selected Trucks</title>
     <link rel="icon" href="logo.jpg" type="image/jpg">
 
+    <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.js"></script>
@@ -132,6 +133,27 @@
         font-weight: bold;
         color: #dc3545;
     }
+
+    .header {
+        position: relative;
+    }
+
+    .pdf-icon-container {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+
+    #pdf-icon {
+        color: #dc3545; /* Change the color of the icon */
+        font-size: 24px; /* Increase the size of the icon */
+        padding: 10px; /* Add some padding around the icon */
+        cursor: pointer; /* Change the cursor to a hand when hovering over the icon */
+    }
+
+    #pdf-icon:hover {
+        color: #c82333; /* Change the color of the icon when hovering over it */
+    }
         </style>
     </head>
     <body>
@@ -144,7 +166,9 @@
                 <span id="queued-trucks-counter"></span>
             </div>
 
-            <img src="pdf-icon.png" id="pdf-icon" alt="Generate PDF">
+            <div class="pdf-icon-container">
+                <i class="fas fa-file-pdf" id="pdf-icon"></i>
+            </div>
         </div>
         <button id="remove-button">Remove from list</button>
         <!-- Rest of your code -->
@@ -188,14 +212,25 @@
         firebase.firestore().collection('selectedTrucks').get().then(function(querySnapshot) {
             var index = 1; // Initialize index
             querySnapshot.forEach(function(doc) {
+                // Extract truck data from the document
+                var truckData = doc.data();
+
                 // Create new table row for each truck
                 var row = document.createElement('tr');
+                row.id = 'row-' + truckData.truck; // Set the id of the row
 
                 // Create a checkbox for deselection
                 var selectCell = document.createElement('td');
                 var checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.className = 'deselect-checkbox'; // Adding a class for easier identification
+
+                if (truckData && truckData.hasOwnProperty('truck')) {
+                    checkbox.setAttribute('data-truckNo', truckData.truck);
+                } else {
+                    console.error('Truck data is not available or does not contain a truck field');
+                }
+
                 selectCell.appendChild(checkbox);
                 row.appendChild(selectCell);
 
@@ -337,44 +372,89 @@
         });
 
         function clearTruckAsLoaded(truckNo) {
-    // Update Firestore to mark the truck as unloaded and unqueued
-    var docId = truckNo.replace('/', '_');
-    var selectedTrucksRef = firebase.firestore().collection('selectedTrucks');
-
-    selectedTrucksRef.doc(docId).update({
-        loaded: false,
-        queued: false // Clear queued status as well
-    })
-    .then(function() {
-        console.log("Truck marked as unloaded and unqueued successfully");
-
-        // Remove the truck document from the selected trucks collection
-        selectedTrucksRef.where(firebase.firestore.FieldPath.documentId(), '==', docId).get()
-        .then(function(querySnapshot) {
-            querySnapshot.forEach(function(doc) {
-                doc.ref.delete()
-                .then(function() {
-                    console.log("Truck removed from selected list successfully");
-
-                    // Remove the truck row from the table (if it exists)
-                    var row = document.querySelector(`#truck-rows tr[data-truck="${truckNo}"]`);
-                    if (row) {
-                        row.parentNode.removeChild(row);
+            console.log("clearTruckAsLoaded function called with truckNo: ", truckNo);
+            // Update Firestore to mark the truck as unloaded and unqueued
+            var docId = truckNo.replace('/', '_');
+            var selectedTrucksRef = firebase.firestore().collection('selectedTrucks');
+        
+            console.log("Truck number: ", truckNo);
+            console.log("Document ID: ", docId);
+        
+            selectedTrucksRef.doc(docId).update({
+                loaded: false,
+                queued: false // Clear queued status as well
+            })
+            .then(function() {
+                console.log("Truck marked as unloaded and unqueued successfully");
+        
+                // Remove the truck document from the selected trucks collection
+                selectedTrucksRef.where(firebase.firestore.FieldPath.documentId(), '==', docId).get()
+                .then(function(querySnapshot) {
+                    console.log("Query snapshot: ", querySnapshot);
+        
+                    if (querySnapshot.empty) {
+                        console.log("No matching documents.");
+                        return;
                     }
+        
+                    querySnapshot.forEach(function(doc) {
+                        console.log("Document data: ", doc.data());
+        
+                        doc.ref.delete()
+                        .then(function() {
+                            console.log("Truck removed from selected list successfully");
+        
+                            // Remove the truck row from the table (if it exists)
+                            var row = document.querySelector(`#truck-rows tr[data-truck="${truckNo}"]`);
+                            if (row) {
+                                row.parentNode.removeChild(row);
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error("Error removing truck from selected list: ", error);
+                        });
+                    });
                 })
                 .catch(function(error) {
-                    console.error("Error removing truck from selected list: ", error);
+                    console.error("Error querying for truck document: ", error);
                 });
+            })
+            .catch(function(error) {
+                console.error("Error marking truck as unloaded and unqueued: ", error);
             });
-        })
-        .catch(function(error) {
-            console.error("Error querying for truck document: ", error);
+            
+            // Remove the corresponding row from the table
+            var rowId = 'row-' + truckNo; // Construct the row id
+            var row = document.getElementById(rowId); // Get the row by id
+            if (row) {
+            row.parentNode.removeChild(row); // Remove the row from its parent
+            } else {
+            console.error('Row not found for truck number: ' + truckNo);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            var removeButton = document.getElementById('remove-button');
+            if (removeButton) {
+                removeButton.addEventListener('click', function() {
+                    var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+                    if (checkboxes.length > 0) {
+                        checkboxes.forEach(function(checkbox) {
+                            var truckNo = checkbox.getAttribute('data-truckNo');
+                            if (truckNo) {
+                                clearTruckAsLoaded(truckNo);
+                            } else {
+                                console.log("Truck number not found for checkbox", checkbox);
+                            }
+                        });
+                    } else {
+                        console.log("No checkboxes selected");
+                    }
+                });
+            } else {
+                console.log("Remove button not found");
+            }
+            
         });
-    })
-    .catch(function(error) {
-        console.error("Error marking truck as unloaded and unqueued: ", error);
-    });
-}
 
 function setupRealtimeUpdates() {
     // Set up a listener on the selectedTrucks collection
