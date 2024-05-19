@@ -78,33 +78,33 @@
         }
 
         .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-.company-details {
-    position: relative;
-    text-align: right;
-}
+        .company-details {
+            position: relative;
+            text-align: right;
+        }
 
 
-    /* Set a smaller width for the "Index" column */
-    .index-column {
-        width: 5%; /* Adjust this value as needed */
-    }
+        /* Set a smaller width for the "Index" column */
+        .index-column {
+            width: 5%; /* Adjust this value as needed */
+        }
 
-    /* Set the width of the other columns to evenly divide the remaining space */
-    .invoice-table th:not(.index-column),
-    .invoice-table td:not(.index-column) {
-        width: -.83%; /* (100% - 5%) divided by 6 columns */
-    }
+        /* Set the width of the other columns to evenly divide the remaining space */
+        .invoice-table th:not(.index-column),
+        .invoice-table td:not(.index-column) {
+            width: -.83%; /* (100% - 5%) divided by 6 columns */
+        }
 
-    /* Set the width of the input fields */
-    .invoice-details input[type="text"] {
-        width: 100%;
-        box-sizing: border-box;
-    }
+        /* Set the width of the input fields */
+        .invoice-details input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
 
     </style>
 </head>
@@ -403,8 +403,19 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
             console.log("Error getting loaded trucks: ", error);
         });
 
+    // Get the buyer and seller from the input fields
+    var seller = document.getElementById('seller').value;
+    var buyer = document.getElementById('buyer').value;
+
+    // Include the buyer and seller in the invoice data
+    var invoiceDataWithBuyerAndSeller = {
+        ...invoiceData,
+        seller: seller,
+        buyer: buyer
+    };
+
     // Save invoice data to Firestore with the generated invoice number as the document ID
-    firebase.firestore().collection("invoices").doc(invoiceNumber).set(invoiceData)
+    firebase.firestore().collection("invoices").doc(invoiceNumber).set(invoiceDataWithBuyerAndSeller)
         .then(function() {
             console.log("Invoice saved with ID: ", invoiceNumber);
 
@@ -474,6 +485,7 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
             // Create a new table with only the values of the input fields
     var table = document.createElement('table');
     var thead = document.getElementById('invoice-table').querySelector('thead').cloneNode(true);
+    thead.querySelector('tr').lastElementChild.remove();
     var tbody = document.createElement('tbody');
     table.appendChild(thead);
     table.appendChild(tbody);
@@ -482,7 +494,7 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
             for (var i = 0; i < rows.length; i++) {
                 var tr = document.createElement('tr');
                 var cells = rows[i].children;
-                for (var j = 0; j < cells.length; j++) {
+                for (var j = 0; j < cells.length - 1; j++) { // Changed from cells.length to cells.length - 1
                     var td = document.createElement('td');
                     var input = cells[j].querySelector('input');
                     if (input) {
@@ -494,7 +506,6 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
                 }
                 tbody.appendChild(tr);
             }
-
          
 doc.autoTable({
     html: table,
@@ -559,3 +570,6 @@ doc.save('invoice.pdf');
 
     </script>
     
+
+</body>
+</html>
