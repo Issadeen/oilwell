@@ -132,6 +132,8 @@
     </style>
     <script src="https://kit.fontawesome.com/d00c9b568a.js" crossorigin="anonymous"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
 </head>
 <body>
@@ -249,25 +251,46 @@ function appendTruckRows(querySnapshot) {
         `;
         index++; // Increment counter
 
+                // get the logged in users id
+                var loggedInUserId = firebase.auth().currentUser.uid;
+                
+
     
                 // Attach event listener for editing row
                 var editButton = row.querySelector('.edit-button');
                 editButton.addEventListener('click', function() {
-                    // Ask for confirmation before editing
-                    if (confirm('Are you sure you want to edit this row?')) {
-                        var row = this.parentNode.parentNode;
-                        var cells = row.querySelectorAll('.truck, .driver, .driverId, .tel, .product, .vobs, .comp');
-                        cells.forEach(function(cell) {
-                            cell.setAttribute('contenteditable', 'true');
-                            cell.style.backgroundColor = '#ffffcc';
-                        });
-                        var editButton = row.querySelector('.edit-button');
-                        var saveButton = row.querySelector('.save-button');
-                        editButton.style.display = 'none';
-                        saveButton.style.display = '';
+                    // Ask for the user work ID
+                    var userWorkId = prompt("Please enter your work ID", "Work ID");
+                    if (userWorkId == null || userWorkId == "") {
+                        alert("Please enter your work ID");
                     } else {
-                        // If the user cancels, do nothing
-                        return;
+                        // Get the logged-in user's data from Firebase Realtime Database
+                        var userId = firebase.auth().currentUser.uid;
+                        firebase.database().ref('/users/' + userId)
+                            .once('value')
+                            .then(function(snapshot) {
+                                var userData = snapshot.val();
+                                if (userData) {
+                                    // Check if the user work ID is the same as the logged-in user's work ID
+                                    if (userWorkId == userData.workId) {
+                                        // Allow the user to edit the row
+                                        var cells = row.querySelectorAll('.truck, .driver, .driverId, .tel, .product, .vobs, .comp');
+                                        cells.forEach(function(cell) {
+                                            cell.setAttribute('contenteditable', 'true');
+                                            cell.style.backgroundColor = '#ddd'; // Change the background color to indicate editing
+                                        });
+                                        var saveButton = row.querySelector('.save-button');
+                                        editButton.style.display = 'none';
+                                        saveButton.style.display = '';
+                                    } else {
+                                        alert("You are not authorized to edit this data");
+                                    }
+                                } else {
+                                    console.log("No such document!");
+                                }
+                            }).catch(function(error) {
+                                console.log("Error getting document:", error);
+                            });
                     }
                 });
     
@@ -310,19 +333,46 @@ function appendTruckRows(querySnapshot) {
                 // Attach event listener for deleting data
                 var deleteButton = row.querySelector('.delete-button');
                 deleteButton.addEventListener('click', function() {
-                    var id = this.getAttribute('data-id');
-                    if (confirm('Are you sure you want to delete this data?')) {
-                        firebase.firestore().collection('jwtrucks').doc(id).delete()
-                            .then(function() {
-                                row.remove();
-                            })
-                            .catch(function(error) {
-                                console.error("Error removing document: ", error);
-                                alert("An error occurred. Please try again.");
+                    var self = this; // Store the this context in a variable
+                    // Ask for the user work ID
+                    var userWorkId = prompt("Please enter your work ID", "Work ID");
+                    if (userWorkId == null || userWorkId == "") {
+                        alert("Please enter your work ID");
+                    } else {
+                        // Get the logged-in user's data from Firebase Realtime Database
+                        var userId = firebase.auth().currentUser.uid;
+                        
+                        firebase.database().ref('/users/' + userId)
+                            .once('value')
+                            .then(function(snapshot) {
+                                var userData = snapshot.val();
+                                if (userData) {
+                                    
+                                    // Check if the user work ID is the same as the logged-in user's work ID
+                                    if (userWorkId == userData.workId) {
+                                        // Allow the user to delete the row
+                                        var id = self.getAttribute('data-id'); // Use the stored this context
+                                        if (confirm('Are you sure you want to delete this data?')) {
+                                            firebase.firestore().collection('jwtrucks').doc(id).delete()
+                                                .then(function() {
+                                                    row.remove();
+                                                })
+                                                .catch(function(error) {
+                                                    console.error("Error removing document: ", error);
+                                                    alert("An error occurred. Please try again.");
+                                                });
+                                        }
+                                    } else {
+                                        alert("You are not authorized to delete this data");
+                                    }
+                                } else {
+                                    console.log("No such document!");
+                                }
+                            }).catch(function(error) {
+                                console.log("Error getting document:", error);
                             });
                     }
-                });
-    
+                });    
                 // Append the row to the table body
                 truckTableBody.appendChild(row);
     
