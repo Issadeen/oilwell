@@ -166,8 +166,9 @@
                         var invoiceData = doc.data();
                         var seller = invoiceData.seller || 'N/A';
                         var buyer = invoiceData.buyer || 'N/A';
+                        var date = invoiceData.date || 'N/A'; // Retrieve the date
                         var total = calculateTotal(invoiceData);
-                        generatePDF(invoiceNumber, seller, buyer, total, invoiceData);
+                        generatePDF(invoiceNumber, seller, buyer, total, date, invoiceData); // Pass the date to generatePDF
                     } else {
                         alert("Invoice not found.");
                     }
@@ -177,40 +178,26 @@
                 });
         }
 
-        // Event listener for search bar
-        document.getElementById('search-invoice').addEventListener('input', function() {
-            var searchTerm = this.value.toUpperCase();
-            var invoiceItems = document.querySelectorAll('#invoice-list li a');
+        function generatePDF(invoiceNumber, seller, buyer, total, date, invoiceData) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
 
-            invoiceItems.forEach(function(item) {
-                var invoiceNumber = item.textContent;
-                if (invoiceNumber.includes(searchTerm)) {
-                    item.parentElement.style.display = 'block';
-                } else {
-                    item.parentElement.style.display = 'none';
-                }
-            });
-        });
+            // Image for logo
+            var img = new Image();
+            img.src = 'logo.jpg'; 
 
-        function generatePDF(invoiceNumber, seller, buyer, total, invoiceData) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+            // Generate PDF content
+            doc.addImage(img, 'JPEG', 15, 5, 50, 50); 
 
-    // Image for logo
-    var img = new Image();
-    img.src = 'logo.jpg'; 
-
-    // Generate PDF content
-    doc.addImage(img, 'JPEG', 15, 5, 50, 50); 
-
-    doc.setFontSize(12);
-    doc.text('Invoice Number: ' + invoiceNumber, 10, 70);
-    doc.setTextColor(0, 128, 0);
-    doc.text('Seller: ' + seller, 10, 80);
-    doc.setTextColor(0, 0, 255);
-    doc.text('Buyer: ' + buyer, 150, 80);
-    doc.setTextColor(0, 0, 0); 
-
+            doc.setFontSize(12);
+            doc.text('Invoice Number: ' + invoiceNumber, 10, 70);
+            doc.text('Date: ' + date, 150, 70); // Add the date to the PDF
+            doc.setTextColor(0, 128, 0);
+            doc.text('Seller: ' + seller, 10, 80);
+            doc.setTextColor(0, 0, 255);
+            doc.text('Buyer: ' + buyer, 150, 80);
+            doc.setTextColor(0, 0, 0);
+        
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 200);
     doc.text('OILWELL INVESTMENT LIMITED', 150, 10);
