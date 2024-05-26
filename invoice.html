@@ -132,6 +132,7 @@
     firebase.initializeApp(firebaseConfig);
 </script>
 <div class="invoice-details">
+    <input type="text" id="invoice-date" name="invoice-date" value="" readonly>
     <label for="invoice-num">Invoice Number:</label><br>
     <input type="text" id="invoice-num" name="invoice-num" readonly><br>
     <label for="seller">Seller:</label><br>
@@ -167,8 +168,18 @@
 
 <!-- JavaScript content -->
 <script>
+// function to get current date
+function getCurrentDate() {
+    var date = new Date();
+    var day = date.getDate();
+    var month = date.getMonth() + 1;
+    var year = date.getFullYear();
+    return day + '/' + month + '/' + year;
+}
+var currentDate = getCurrentDate(); // Call the function and assign its return value to currentDate
+document.getElementById("invoice-date").value = currentDate; 
 
-    
+// function to format amount
 function formatAmount(input) {
     var value = parseFloat(input.value.replace(/[^0-9.-]+/g,"")); // Strip out non-numeric characters
     if (!isNaN(value)) {
@@ -406,12 +417,14 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
     // Get the buyer and seller from the input fields
     var seller = document.getElementById('seller').value;
     var buyer = document.getElementById('buyer').value;
+    var date = document.getElementById('invoice-date').value;
 
     // Include the buyer and seller in the invoice data
     var invoiceDataWithBuyerAndSeller = {
         ...invoiceData,
         seller: seller,
-        buyer: buyer
+        buyer: buyer,
+        date: date
     };
 
     // Save invoice data to Firestore with the generated invoice number as the document ID
@@ -438,9 +451,14 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
 
 // pdf
     function generatePDF() {
+        var date = document.getElementById('invoice-date').value;
         var seller = document.getElementById('seller').value;
         var buyer = document.getElementById('buyer').value;
         var invoiceNum = document.getElementById('invoice-num').value;
+        var total = document.getElementById('total').value;
+
+        var doc = new jspdf.jsPDF();
+
         var total = document.getElementById('total').value;
 
         var doc = new jspdf.jsPDF();
@@ -451,6 +469,13 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
             doc.addImage(this, 'JPEG', 15, 5, 50, 50);  // Adjusted y-coordinate
 
             doc.setFontSize(12);
+            var pageWidth = doc.internal.pageSize.getWidth();
+            var dateWidth = doc.getStringUnitWidth('Date: ' + date) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+
+            // Calculate the x-coordinate for the date
+            var dateX = pageWidth - dateWidth - 10; // Subtract 10 for the right margin
+
+            doc.text('Date: ' + date, dateX, 70); // Adjusted y-coordinate to match invoice number
             doc.text('Invoice Number: ' + invoiceNum, 10, 70);  // Adjusted y-coordinate
             doc.setTextColor(0, 128, 0); // Set text color to green for seller
             doc.text('Seller: ' + seller, 10, 80);  // Adjusted x-coordinate and y-coordinate
@@ -458,6 +483,7 @@ function saveInvoiceDataAndClearTrucks(invoiceNumber, invoiceData) {
             doc.text('Buyer: ' + buyer, 150, 80);  // Adjusted y-coordinate
             doc.setTextColor(0, 0, 0); // Reset text color to black
 
+        
             // Add company details
             doc.setFontSize(10); // Reduce font size
             doc.setTextColor(100, 100, 200); // Set text color to slightly bluish
