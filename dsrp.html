@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck List - Oilwell Company</title>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f7f8fc;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        nav img {
+            height: 40px;
+        }
+        nav h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        table th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        .loading {
+            text-align: center;
+            font-size: 20px;
+            padding: 50px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="logo.jpg" alt="Oilwell Company Logo">
+        <h1>Oilwell Company</h1>
+    </nav>
+
+    <div class="container">
+        <h2>Loading report</h2>
+        <div class="loading" id="loading">Loading trucks...</div>
+
+        <input type="text" id="search" onkeyup="searchTrucks()" placeholder="Search for trucks..">
+        <table id="truckTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Truck No</th>
+                    <th>Order No</th>
+                    <th>Loading Depot</th>
+                    <th>Customer's Name</th>
+                    <th>Product</th>
+                    <th>Vol @OBS</th>
+                    <th>Vol @20</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    
+<!-- Truck Info Modal -->
+<div class="modal" tabindex="-1" role="dialog" id="truckInfoModal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Truck Info</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <h4 id="truckNo"></h4>
+          <p id="totalTrips"></p>
+          <table class="table" id="infoTable">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Product</th>
+                <th scope="col">Vol20</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDklv5Sgwiy84_fCOqiQRCiuTBVRZ_2EvY",
+            authDomain: "my-1-wb.firebaseapp.com",
+            projectId: "my-1-wb",
+            storageBucket: "my-1-wb.appspot.com",
+            messagingSenderId: "865633557898",
+            appId: "1:865633557898:web:5e8a848b08d7475054bc73"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+
+        async function loadTrucks() {
+        const tableBody = document.querySelector('#truckTable tbody');
+        const truckCounts = {};  // Object to store the counts of each truck
+        const truckInfo = {};  // Object to store the info of each truck
+        try {
+            const querySnapshot = await db.collection('reports').orderBy('date', 'asc').get();
+            let index = 1;
+            querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    const date = data.date.toDate();  // Convert Firestore Timestamp to JavaScript Date
+    const dateString = date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    }).replace(/ /g, '-');  // Format date as a string
+    const row = document.createElement('tr');
+    row.setAttribute('data-id', doc.id); // Set the document ID as data attribute
+    row.innerHTML = `
+        <td>${index++}</td>
+        <td>${dateString}</td>
+        <td>${data.truckNo}</td>
+        <td>${data.orderNo}</td>
+        <td>${data.loadingDepot}</td>
+        <td>${data.customerName}</td>
+        <td>${data.product}</td>
+        <td>${data.volObs}</td>
+        <td>${data.vol20}</td>
+        <td>
+            <i class="fas fa-info-circle" onclick="showInfo('${data.truckNo}')"></i>
+            <i class="fas fa-trash" onclick="deleteRow(this)"></i>
+        </td>
+    `;
+    tableBody.appendChild(row);
+
+                // Update the count and info for this truck
+                if (truckCounts[data.truckNo]) {
+                    truckCounts[data.truckNo]++;
+                    truckInfo[data.truckNo].push({date: dateString, product: data.product, vol20: data.vol20});
+                } else {
+                    truckCounts[data.truckNo] = 1;
+                    truckInfo[data.truckNo] = [{date: dateString, product: data.product, vol20: data.vol20}];
+                }
+            });
+            window.truckInfo = truckInfo;  // Make the truckInfo object globally accessible
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('truckTable').style.display = '';
+        } catch (error) {
+            console.error("Error loading trucks: ", error);
+            document.getElementById('loading').innerText = 'Failed to load trucks.';
+        }
+    }
+
+    function showInfo(truckNo) {
+        const info = window.truckInfo[truckNo];
+        document.getElementById('truckNo').innerText = 'Truck No: ' + truckNo;
+        document.getElementById('totalTrips').innerText = 'Total Trips: ' + info.length;
+        const tableBody = document.querySelector('#infoTable tbody');
+        tableBody.innerHTML = '';  // Clear the table
+        info.forEach((trip) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trip.date}</td>
+                <td>${trip.product}</td>
+                <td>${trip.vol20}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        $('#truckInfoModal').modal('show');  // Show the modal
+    }
+
+    function deleteRow(icon) {
+    const enteredEmail = prompt("Please enter your email:");
+    const currentUserEmail = firebase.auth().currentUser.email;  // Get the current logged-in user's email
+    if (enteredEmail === currentUserEmail) {
+        const row = icon.parentNode.parentNode;
+        const docId = row.getAttribute('data-id'); // Get the document ID from data attribute
+        console.log('docId:', docId);
+        if (docId) {
+            db.collection('reports').doc(docId).delete().then(() => {
+                console.log("Document successfully deleted!");
+                row.parentNode.removeChild(row);
+            }).catch((error) => {
+                console.error("Error removing document: ", error);
+            });
+        } else {
+            console.error("No document ID found for deletion.");
+        }
+    } else {
+        alert("Incorrect email. The row will not be deleted.");
+    }
+}
+
+
+    
+        //search function
+        function searchTrucks() {
+            const input = document.getElementById('search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('truckTable');
+            const tr = table.getElementsByTagName('tr');
+            for (let i = 0; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[2];
+                if (td) {
+                    const textValue = td.textContent || td.innerText;
+                    if (textValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = '';
+                    } else {
+                        tr[i].style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        loadTrucks();
+    </script>
+</body>
+</html>

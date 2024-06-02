@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Form - Oilwell Company</title>
+
+    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f7f8fc;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            width: 100%;
+            background-color: #fff;
+            color: rgb(13, 1, 1);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        nav img {
+            height: 40px;
+        }
+        nav h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        form {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: 500;
+            text-align: left;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 15px;
+            width: 100%;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .form-column {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            #reportForm {
+                display: flex;
+                justify-content: space-between;
+            }
+            .form-column {
+                flex: 1;
+                margin-right: 20px; /* Increase this value to increase space between columns */
+            }
+            .form-column:last-child {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="logo.jpg" alt="Oilwell Company Logo">
+        <h1>Oilwell Company</h1>
+    </nav>
+    
+    <form id="reportForm">
+        <div class="form-column">
+            
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required>
+
+        <label for="truckNo">Truck No:</label>
+        <input type="text" id="truckNo" name="truckNo" required>
+
+        <label for="orderNo">Order No:</label>
+        <input type="text" id="orderNo" name="orderNo" required>
+
+        <label for="loadingDepot">Loading Depot:</label>
+        <input type="text" id="loadingDepot" name="loadingDepot" required>
+    </div>
+
+        <div class="form-column">
+
+        <label for="customerName">Customer's Name:</label>
+        <input type="text" id="customerName" name="customerName" required>
+
+        <label for="product">Product:</label>
+        <input type="text" id="product" name="product" required>
+
+        <label for="volObs">Vol @OBS:</label>
+        <input type="number" id="volObs" name="volObs" required>
+
+        <label for="vol20">Vol @20:</label>
+        <input type="number" id="vol20" name="vol20" required>
+        <button type="submit">Submit</button>
+    </div>
+    </form>
+
+    <script>
+        // Initialize Firebase
+        var firebaseConfig = {
+            apiKey: "AIzaSyDklv5Sgwiy84_fCOqiQRCiuTBVRZ_2EvY",
+            authDomain: "my-1-wb.firebaseapp.com",
+            projectId: "my-1-wb",
+            storageBucket: "my-1-wb.appspot.com",
+            messagingSenderId: "865633557898",
+            appId: "1:865633557898:web:5e8a848b08d7475054bc73"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const dateString = document.getElementById('date').value;
+            const truckNo = document.getElementById('truckNo').value;
+            const orderNo = document.getElementById('orderNo').value;
+            const loadingDepot = document.getElementById('loadingDepot').value;
+            const customerName = document.getElementById('customerName').value;
+            const product = document.getElementById('product').value;
+            const volObs = document.getElementById('volObs').value;
+            const vol20 = document.getElementById('vol20').value;
+
+            // Convert dateString to JavaScript Date object
+            const date = new Date(dateString);
+
+            try {
+                await db.collection('reports').add({
+                    date: date,
+                    truckNo: truckNo,
+                    orderNo: orderNo,
+                    loadingDepot: loadingDepot,
+                    customerName: customerName,
+                    product: product,
+                    volObs: volObs,
+                    vol20: vol20
+                });
+                console.log("Report saved successfully.");
+                alert("Report saved successfully.");
+                document.getElementById('reportForm').reset();
+            } catch (error) {
+                console.error("Error saving report: ", error);
+            }
+        });
+            </script>
+</body>
+</html>
